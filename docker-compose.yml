@@ -2,10 +2,7 @@ version: '3.0'
 
 services:
     сorruption-tracker:
-        container_name: сorruption-tracker-api
-        image: сorruption-tracker-service:1.0
         build:
             dockerfile: ./CorruptionTracker.API/Dockerfile
         ports:
             - "5041:80"
-        restart: on-failure
