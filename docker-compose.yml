@@ -1,5 +1,12 @@
+version: '3.0'
+
+networks:
+    beautysaloon-network:
+        external: true
+
 services:
   сorruption-tracker:
+    image: сorruption-tracker-service:1.0
     build:
       dockerfile: ./CorruptionTracker.API/Dockerfile
       ports:
