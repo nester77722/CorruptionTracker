@@ -13,7 +13,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-            - name: Increment Docker image version
+      - name: Increment Docker image version
         id: versioning
         shell: bash
         run: |
