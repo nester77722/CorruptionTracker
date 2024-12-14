@@ -15,15 +15,26 @@ jobs:
 
       - name: Increment Docker image version
         id: versioning
+        shell: pwsh
         run: |
-          # Извлекаем текущую версию из docker-compose.yml
-          current_version=$(grep 'image: corruption-tracker-service:' docker-compose.yml | awk -F ':' '{print $3}')
-          # Увеличиваем версию (например, 1.0 -> 1.1)
-          new_version=$(echo $current_version | awk -F '.' '{print $1 "." $2+1}')
-          echo "New version: $new_version"
-          # Обновляем docker-compose.yml
-          sed -i "s/corruption-tracker-service:$current_version/corruption-tracker-service:$new_version/" docker-compose.yml
-          echo "new_version=$new_version" >> $GITHUB_ENV
+          # Читаем содержимое файла docker-compose.yml
+          $content = Get-Content docker-compose.yml
+      
+          # Извлекаем текущую версию из строки с образом
+          $currentVersion = ($content -match "image: corruption-tracker-service:(.+)$" | Out-String).Split(":")[-1].Trim()
+      
+          # Увеличиваем версию (например, с 1.0 на 1.1)
+          $newVersion = [string]([math]::Round(($currentVersion -replace '\.', ',') + 0.1, 1)).Replace(',', '.')
+      
+          Write-Host "Current version: $currentVersion"
+          Write-Host "New version: $newVersion"
+      
+          # Обновляем версию в файле docker-compose.yml
+          $updatedContent = $content -replace "corruption-tracker-service:$currentVersion", "corruption-tracker-service:$newVersion"
+          Set-Content docker-compose.yml $updatedContent
+      
+          # Сохраняем новую версию в переменную окружения
+          echo "new_version=$newVersion" >> $GITHUB_ENV
 
       - name: Commit and push updated version
         run: |
@@ -32,11 +43,13 @@ jobs:
           git add docker-compose.yml
           git commit -m "Update Docker image version to ${{ env.new_version }}"
           git push
+
   deploy:
     runs-on: self-hosted
     needs: update-version
     steps:
-      - name: checkout repo
+      - name: Checkout repo
         uses: actions/checkout@v4
-      - name: docker-compose
+
+      - name: Docker Compose
         run: docker-compose up -d
