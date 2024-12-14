@@ -17,23 +17,18 @@ jobs:
         id: versioning
         shell: pwsh
         run: |
-          # Читаем содержимое файла docker-compose.yml
           $content = Get-Content docker-compose.yml
-      
-          # Извлекаем текущую версию из строки с образом
+
           $currentVersion = ($content -match "image: corruption-tracker-service:(.+)$" | Out-String).Split(":")[-1].Trim()
       
-          # Увеличиваем версию (например, с 1.0 на 1.1)
           $newVersion = [string]([math]::Round(($currentVersion -replace '\.', ',') + 0.1, 1)).Replace(',', '.')
       
           Write-Host "Current version: $currentVersion"
           Write-Host "New version: $newVersion"
       
-          # Обновляем версию в файле docker-compose.yml
           $updatedContent = $content -replace "corruption-tracker-service:$currentVersion", "corruption-tracker-service:$newVersion"
           Set-Content docker-compose.yml $updatedContent
       
-          # Сохраняем новую версию в переменную окружения
           echo "new_version=$newVersion" >> $GITHUB_ENV
 
       - name: Commit and push updated version
