@@ -7,22 +7,34 @@ on:
     branches: [ "main" ]
 
 jobs:
-  reset-environment:
+  update-version:
     runs-on: self-hosted
     steps:
-      - name: Stop and remove containers, networks
-        run: docker ps -q | ForEach-Object { docker stop $_ }
-      - name: Remove unused data
-        run: docker system prune -a -f
-  prepare-environment:
-    runs-on: self-hosted
-    needs: reset-environment
-    steps:
-      - name: Create Docker network
-        run: docker network create corruption-tracker-network || true
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Increment Docker image version
+        id: versioning
+        run: |
+          # Извлекаем текущую версию из docker-compose.yml
+          current_version=$(grep 'image: corruption-tracker-service:' docker-compose.yml | awk -F ':' '{print $3}')
+          # Увеличиваем версию (например, 1.0 -> 1.1)
+          new_version=$(echo $current_version | awk -F '.' '{print $1 "." $2+1}')
+          echo "New version: $new_version"
+          # Обновляем docker-compose.yml
+          sed -i "s/corruption-tracker-service:$current_version/corruption-tracker-service:$new_version/" docker-compose.yml
+          echo "new_version=$new_version" >> $GITHUB_ENV
+
+      - name: Commit and push updated version
+        run: |
+          git config --local user.name "GitHub Actions"
+          git config --local user.email "actions@github.com"
+          git add docker-compose.yml
+          git commit -m "Update Docker image version to ${{ env.new_version }}"
+          git push
   deploy:
     runs-on: self-hosted
-    needs: prepare-environment
+    needs: update-version
     steps:
       - name: checkout repo
         uses: actions/checkout@v4
