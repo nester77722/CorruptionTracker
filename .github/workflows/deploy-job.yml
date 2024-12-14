@@ -11,7 +11,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Stop and remove containers, networks
-        run: docker stop $(docker ps -a -q)
+        run: docker ps -q | ForEach-Object { docker stop $_ }
       - name: Remove unused data
         run: docker system prune -a -f
   prepare-environment:
