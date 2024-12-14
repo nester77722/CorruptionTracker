@@ -13,23 +13,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Increment Docker image version
+            - name: Increment Docker image version
         id: versioning
-        shell: pwsh
+        shell: bash
         run: |
-          $content = Get-Content docker-compose.yml
-
-          $currentVersion = ($content -match "image: corruption-tracker-service:(.+)$" | Out-String).Split(":")[-1].Trim()
-      
-          $newVersion = [string]([math]::Round(($currentVersion -replace '\.', ',') + 0.1, 1)).Replace(',', '.')
-      
-          Write-Host "Current version: $currentVersion"
-          Write-Host "New version: $newVersion"
-      
-          $updatedContent = $content -replace "corruption-tracker-service:$currentVersion", "corruption-tracker-service:$newVersion"
-          Set-Content docker-compose.yml $updatedContent
-      
+          currentVersion=$(grep 'image: corruption-tracker-service:' docker-compose.yml | awk -F ':' '{print $3}')
+          
+          newVersion=$(echo $currentVersion | awk -F '.' '{print $1 "." $2+1}')
+          echo "Current version: $currentVersion"
+          echo "New version: $newVersion"
+          
+          sed -i "s/corruption-tracker-service:$currentVersion/corruption-tracker-service:$newVersion/" docker-compose.yml
+          
           echo "new_version=$newVersion" >> $GITHUB_ENV
+
 
       - name: Commit and push updated version
         run: |
